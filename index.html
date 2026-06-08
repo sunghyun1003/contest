@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자동차CM 통합 마케팅 애널리틱스 | 자동차CM사업부</title>
+<style>
+/* ===== 외부 CDN/폰트/API 연동 0 — 시스템 폰트만 사용 (망분리 환경) ===== */
+:root{
+  --bg:#f1f5f9; --surface:#ffffff; --surface2:#f8fafc;
+  --text:#1e293b; --text2:#64748b; --text3:#94a3b8;
+  --line:#e2e8f0; --line2:#cbd5e1;
+  --accent:#f97316; --accent2:#ea580c; --accent-dim:rgba(249,115,22,.10);
+  --green:#22c55e; --blue:#3b82f6;
+  --shadow:0 2px 12px rgba(15,23,42,.06); --shadow2:0 16px 36px rgba(15,23,42,.14);
+}
+/* 다크 테마: 변수만 교체하면 셸 전체가 다크로 전환 */
+body.dark{
+  --bg:#0d0f14; --surface:#161a22; --surface2:#1b202b;
+  --text:#f2f4f8; --text2:#aab2c0; --text3:#7b8494;
+  --line:#262d3a; --line2:#3a4250;
+  --shadow:0 2px 12px rgba(0,0,0,.45); --shadow2:0 16px 36px rgba(0,0,0,.6);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family:'Pretendard','Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',
+    -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--bg); color:var(--text);
+  -webkit-font-smoothing:antialiased; overflow:hidden;
+}
+button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit}
+
+.app{display:flex; flex-direction:column; height:100vh}
+
+/* ===== 상단 마스터 내비 ===== */
+.topbar{
+  display:flex; align-items:center; gap:22px;
+  height:62px; padding:0 22px; flex-shrink:0;
+  background:var(--surface); border-bottom:1px solid var(--line);
+  box-shadow:0 1px 4px rgba(15,23,42,.05); z-index:10;
+}
+.brand{display:flex; align-items:center; gap:10px; cursor:pointer; flex-shrink:0}
+.brand .logo{
+  width:32px; height:32px; border-radius:9px; flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 2px 8px rgba(249,115,22,.32);
+}
+.brand .logo svg{width:18px; height:18px}
+.brand b{font-size:14.5px; font-weight:800; letter-spacing:-.3px; color:var(--text); white-space:nowrap}
+.brand-div{width:1px; height:26px; background:var(--line); flex-shrink:0}
+
+/* 세그먼트형 탭 */
+.nav{display:flex; gap:4px; background:var(--surface2); border:1px solid var(--line); padding:5px; border-radius:13px}
+.nav button{
+  display:flex; align-items:center; gap:8px;
+  padding:10px 20px; border-radius:9px; font-size:14.5px; font-weight:600;
+  color:var(--text2); transition:.15s; white-space:nowrap;
+}
+.nav button svg{width:18px; height:18px; opacity:.8}
+.nav button:hover{color:var(--text)}
+.nav button.on{
+  background:var(--surface); color:var(--accent2); font-weight:700;
+  box-shadow:0 1px 5px rgba(15,23,42,.12);
+}
+.nav button.on svg{opacity:1}
+
+.theme-btn{
+  margin-left:auto; display:flex; align-items:center; justify-content:center;
+  width:38px; height:38px; border-radius:10px;
+  border:1px solid var(--line); background:var(--surface2); color:var(--text2);
+  cursor:pointer; transition:.15s; flex-shrink:0;
+}
+.theme-btn:hover{ color:var(--accent2); border-color:var(--accent); background:var(--accent-dim); }
+.theme-btn svg{ width:18px; height:18px; }
+.theme-btn .ic-sun{ display:none; }
+body.dark .theme-btn .ic-moon{ display:none; }
+body.dark .theme-btn .ic-sun{ display:block; }
+
+/* ===== 콘텐츠 영역 ===== */
+.stage{flex:1; position:relative; overflow:hidden; background:var(--bg)}
+.view{position:absolute; inset:0; opacity:0; visibility:hidden; transition:opacity .2s}
+.view.on{opacity:1; visibility:visible; z-index:2}
+.view iframe{width:100%; height:100%; border:0; display:block; background:#fff}
+
+/* ===== 홈 (기능 일러스트형 런처) ===== */
+.home{display:flex; align-items:center; justify-content:center; overflow-y:auto; padding:40px 24px}
+.home-inner{width:100%; max-width:1120px; margin:auto}
+.home-head{text-align:center; margin-bottom:34px}
+.home-brand{display:inline-flex; align-items:center; gap:13px; margin-bottom:16px}
+.home-brand .hb-logo{width:42px; height:42px; border-radius:12px; flex-shrink:0;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex; align-items:center; justify-content:center; box-shadow:0 8px 20px rgba(249,115,22,.34)}
+.home-brand .hb-logo svg{width:23px; height:23px}
+.home-brand .hb-word{font-size:31px; font-weight:800; letter-spacing:-.9px;
+  background:linear-gradient(95deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; color:var(--accent)}
+.home-accent-bar{width:56px; height:3px; border-radius:3px; margin:0 auto 18px;
+  background:linear-gradient(90deg,var(--accent),var(--accent2)); opacity:.9}
+.home-head h1{font-size:18px; font-weight:700; letter-spacing:-.3px; color:var(--text)}
+.home-head p{margin-top:6px; font-size:13px; color:var(--text3)}
+@media(max-width:560px){ .home-brand .hb-word{font-size:24px} }
+
+.mods{display:grid; grid-template-columns:repeat(3,1fr); gap:18px}
+.mod{
+  position:relative; text-align:left; display:flex; flex-direction:column; overflow:hidden;
+  background:var(--surface); border:1px solid var(--line);
+  border-radius:18px; transition:.18s; box-shadow:var(--shadow);
+}
+.mod:hover{border-color:rgba(249,115,22,.5); transform:translateY(-5px); box-shadow:var(--shadow2)}
+
+/* --- 기능 일러스트 (스크린샷 아님, 직접 디자인) --- */
+.illus{position:relative; height:196px; background:linear-gradient(160deg,#ffffff,#eaeef3); border-bottom:1px solid var(--line); overflow:hidden}
+.illus-chrome{height:26px; display:flex; align-items:center; gap:5px; padding:0 12px; background:rgba(255,255,255,.75); border-bottom:1px solid var(--line)}
+.illus-chrome i{width:7px; height:7px; border-radius:50%; flex-shrink:0}
+.illus-chrome i:nth-child(1){background:#f87171}
+.illus-chrome i:nth-child(2){background:#fbbf24}
+.illus-chrome i:nth-child(3){background:#34d399}
+.illus-chrome span{margin-left:6px; font-size:10px; font-weight:700; color:var(--text3); letter-spacing:.4px}
+.illus-body{padding:13px 15px}
+
+/* 성과분석 일러스트 */
+.kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:10px}
+.kpi{background:#fff; border:1px solid var(--line); border-radius:8px; padding:7px 9px}
+.kpi span{display:block; font-size:8.5px; color:var(--text3); font-weight:600; margin-bottom:2px}
+.kpi b{font-size:14px; font-weight:800; color:var(--text); line-height:1}
+.kpi b em{font-size:9px; font-style:normal; color:var(--text2); font-weight:700; margin-left:1px}
+.kpi:first-child b{color:var(--accent2)}
+.chartbox{height:74px; background:#fff; border:1px solid var(--line); border-radius:8px; padding:8px 9px 6px}
+.chartbox svg{width:100%; height:100%; display:block; overflow:visible}
+.chart-legend{display:flex; gap:12px; position:absolute; top:46px; right:18px}
+.chart-legend i{display:flex; align-items:center; gap:4px; font-size:8px; font-weight:700; color:var(--text2)}
+.chart-legend i::before{content:''; width:9px; height:3px; border-radius:2px; background:var(--c)}
+
+/* 배너 라이브러리 일러스트 */
+.bn-thumbs{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:11px}
+.bt{position:relative; height:46px; border-radius:8px; overflow:hidden; display:flex; align-items:flex-end; padding:5px; border:1px solid rgba(15,23,42,.06)}
+.bt i{font-size:8px; font-weight:800; color:#fff; background:rgba(15,23,42,.5); padding:1px 5px; border-radius:4px; font-style:normal; backdrop-filter:blur(2px)}
+.bt .g{position:absolute; top:5px; right:5px; width:9px; height:9px; border-radius:50%; border:1.5px solid rgba(255,255,255,.9)}
+.g-exc{background:#22c55e} .g-good{background:#3b82f6} .g-avg{background:#f59e0b}
+.bt1{background:linear-gradient(135deg,#fb923c,#f97316)}
+.bt2{background:linear-gradient(135deg,#fdba74,#fb7c2d)}
+.bt3{background:linear-gradient(135deg,#334155,#0f172a)}
+.ch-bars{display:flex; flex-direction:column; gap:6px}
+.cb{display:flex; align-items:center; gap:8px}
+.cb label{width:46px; font-size:9px; font-weight:700; color:var(--text2); text-align:right; flex-shrink:0}
+.cb .track{flex:1; height:9px; background:#eef2f7; border-radius:5px; overflow:hidden}
+.cb .track span{display:block; height:100%; border-radius:5px}
+.cb .v{width:30px; font-size:8.5px; font-weight:700; color:var(--text3)}
+
+/* 키워드 분석 일러스트 (전환 퍼널) — 라이트 프리뷰 카드라 색 고정 */
+.kw-funnel{display:flex; flex-direction:column; gap:8px; margin-bottom:12px}
+.kf{display:flex; align-items:center; gap:8px}
+.kf-l{width:26px; font-size:10px; font-weight:700; color:#64748b; flex-shrink:0}
+.kf-track{flex:1; height:18px}
+.kf-bar{height:100%; border-radius:5px}
+.kf-bar.b1{background:linear-gradient(90deg,#f97316,#fb923c)}
+.kf-bar.b2{background:linear-gradient(90deg,#fb923c,#fdba74)}
+.kf-bar.b3{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.kf-bar.b4{background:linear-gradient(90deg,#22c55e,#4ade80)}
+.kf-v{width:36px; font-size:10px; font-weight:700; color:#94a3b8; text-align:right; flex-shrink:0}
+.kw-tags{display:flex; gap:6px}
+.kw-tags span{font-size:10px; font-weight:600; padding:3px 9px; border-radius:6px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0}
+
+/* 다크모드: 홈 미리보기 일러스트도 어둡게 (라이트 고정색 → 다크 표면으로) */
+body.dark .illus{background:linear-gradient(160deg,#1a1f2b,#11141c)}
+body.dark .illus-chrome{background:rgba(255,255,255,.04); border-bottom-color:var(--line)}
+body.dark .kpi{background:var(--surface2); border-color:var(--line)}
+body.dark .chartbox{background:var(--surface2); border-color:var(--line)}
+body.dark .cb .track{background:#2a3140}
+body.dark .kf-l{color:var(--text2)}
+body.dark .kw-tags span{background:#222a38; color:var(--text2); border-color:var(--line2)}
+
+/* --- 카드 본문 --- */
+.mod .body{padding:20px 24px 24px}
+.mod .head{display:flex; align-items:center; gap:13px; margin-bottom:12px}
+.mod .mic{
+  width:46px; height:46px; border-radius:12px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center; color:#fff;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  box-shadow:0 4px 12px rgba(249,115,22,.3);
+}
+.mod .mic svg{width:24px; height:24px}
+.mod .mt b{display:block; font-size:17px; font-weight:800; letter-spacing:-.4px; color:var(--text)}
+.mod .mt span{font-size:11px; color:var(--text3); font-weight:600; letter-spacing:.3px}
+.mod .use{
+  display:flex; align-items:flex-start; gap:8px;
+  font-size:13px; color:var(--text2); line-height:1.5; margin-bottom:16px;
+}
+.mod .use svg{width:15px; height:15px; flex-shrink:0; margin-top:1px; color:var(--accent2)}
+.mod .feats{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:20px}
+.mod .feats span{
+  font-size:11.5px; font-weight:600; padding:5px 10px; border-radius:7px;
+  background:var(--surface2); color:var(--text2); border:1px solid var(--line);
+}
+.mod .go{
+  display:inline-flex; align-items:center; gap:7px;
+  font-size:13.5px; font-weight:800; color:var(--accent2);
+}
+.mod .go svg{width:16px; height:16px; transition:.18s}
+.mod:hover .go svg{transform:translateX(4px)}
+
+@media(max-width:820px){
+  .mods{grid-template-columns:1fr}
+  .topbar .hint{display:none}
+}
+@media(max-width:560px){
+  .nav button span{display:none}
+  .brand b, .brand-div{display:none}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 상단 마스터 내비 ===== -->
+  <div class="topbar">
+    <div class="brand" onclick="show('home')">
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/>
+        </svg>
+      </div>
+      <b>자동차CM 통합 마케팅 애널리틱스</b>
+    </div>
+
+    <div class="brand-div"></div>
+
+    <div class="nav" id="nav">
+      <button data-v="home" class="on" onclick="show('home')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9.5L12 3l9 6.5V21H3z"/><path d="M9 21v-7h6v7"/></svg>
+        <span>홈</span>
+      </button>
+      <button data-v="mkt" onclick="show('mkt')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6"/><rect x="13" y="7" width="3" height="10"/></svg>
+        <span>성과 분석 대시보드</span>
+      </button>
+      <button data-v="bn" onclick="show('bn')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <span>크리에이티브 라이브러리</span>
+      </button>
+      <button data-v="kw" onclick="show('kw')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+        <span>키워드 데이터랩</span>
+      </button>
+    </div>
+
+    <button class="theme-btn" id="theme-btn" onclick="toggleTheme()" title="다크/라이트 모드 전환" aria-label="다크/라이트 모드 전환">
+      <svg class="ic-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      <svg class="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2M12 20v2M4 12H2M22 12h-2M5 5l1.4 1.4M17.6 17.6L19 19M19 5l-1.4 1.4M6.4 17.6L5 19"/></svg>
+    </button>
+  </div>
+
+  <!-- ===== 콘텐츠 스테이지 ===== -->
+  <div class="stage">
+
+    <!-- 홈 (기능 일러스트형 런처) -->
+    <div class="view home on" id="view-home">
+      <div class="home-inner">
+        <div class="home-head">
+          <div class="home-brand">
+            <span class="hb-logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l3-3 3 3 4-5"/></svg></span>
+            <span class="hb-word">자동차CM 통합 마케팅 애널리틱스</span>
+          </div>
+          <div class="home-accent-bar"></div>
+          <h1>사용할 대시보드를 선택하세요</h1>
+          <p>상단 탭으로 언제든 전환할 수 있습니다.</p>
+        </div>
+        <div class="mods">
+
+          <!-- 성과 분석 대시보드 -->
+          <button class="mod" onclick="show('mkt')">
+            <div class="illus">
+              <div class="illus-chrome"><i></i><i></i><i></i><span>성과 분석</span></div>
+              <div class="illus-body">
+                <div class="kpis">
+                  <div class="kpi"><span>합산매출</span><b>14.7<em>억</em></b></div>
+                  <div class="kpi"><span>신규건수</span><b>1,032</b></div>
+                  <div class="kpi"><span>갱신건수</span><b>1,962</b></div>
+                </div>
+                <div class="chartbox">
+                  <svg viewBox="0 0 300 52" preserveAspectRatio="none">
+                    <line x1="0" y1="51" x2="300" y2="51" stroke="#e2e8f0" stroke-width="1"/>
+                    <g fill="#e2e8f0">
+                      <rect x="8"  y="40" width="14" height="11" rx="1.5"/>
+                      <rect x="50" y="37" width="14" height="14" rx="1.5"/>
+                      <rect x="92" y="41" width="14" height="10" rx="1.5"/>
+                      <rect x="134" y="34" width="14" height="17" rx="1.5"/>
+                      <rect x="176" y="38" width="14" height="13" rx="1.5"/>
+                      <rect x="218" y="30" width="14" height="21" rx="1.5"/>
+                      <rect x="260" y="36" width="14" height="15" rx="1.5"/>
+                    </g>
+                    <polyline points="15,22 57,18 99,19 141,11 183,15 225,9 267,13" fill="none" stroke="#22c55e" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    <polyline points="15,34 57,32 99,36 141,29 183,32 225,27 267,31" fill="none" stroke="#f97316" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </div>
+                <div class="chart-legend">
+                  <i style="--c:#f97316">신규</i><i style="--c:#22c55e">갱신</i>
+                </div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="head">
+                <div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="11" width="3" height="6" rx="1"/><rect x="13" y="7" width="3" height="10" rx="1"/></svg></div>
+                <div class="mt"><b>성과 분석 대시보드</b><span>PERFORMANCE ANALYTICS</span></div>
+              </div>
+              <p class="use">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                신규·갱신 실적의 추이와 채널 기여도, 매출 예측·이상 신호를 확인할 때
+              </p>
+              <div class="feats"><span>요약 KPI</span><span>월별·일별</span><span>채널분석</span><span>매출예측</span><span>이상감지</span></div>
+              <span class="go">대시보드 열기 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </button>
+
+          <!-- 배너 소재 라이브러리 -->
+          <button class="mod" onclick="show('bn')">
+            <div class="illus">
+              <div class="illus-chrome"><i></i><i></i><i></i><span>크리에이티브</span></div>
+              <div class="illus-body">
+                <div class="bn-thumbs">
+                  <div class="bt bt1"><span class="g g-good"></span><i>META</i></div>
+                  <div class="bt bt2"><span class="g g-exc"></span><i>카카오</i></div>
+                  <div class="bt bt3"><span class="g g-avg"></span><i>구글</i></div>
+                </div>
+                <div class="ch-bars">
+                  <div class="cb"><label>META</label><div class="track"><span style="width:74%;background:#3b82f6"></span></div><div class="v">우수</div></div>
+                  <div class="cb"><label>카카오</label><div class="track"><span style="width:90%;background:#f59e0b"></span></div><div class="v">우수</div></div>
+                  <div class="cb"><label>구글DA</label><div class="track"><span style="width:46%;background:#3b82f6"></span></div><div class="v">보통</div></div>
+                  <div class="cb"><label>네이버</label><div class="track"><span style="width:28%;background:#22c55e"></span></div><div class="v">부진</div></div>
+                </div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="head">
+                <div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+                <div class="mt"><b>크리에이티브 라이브러리</b><span>CREATIVE LIBRARY</span></div>
+              </div>
+              <p class="use">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                채널별 배너 소재의 성과(CTR·CPA·CPS)를 비교하고 등급을 관리할 때
+              </p>
+              <div class="feats"><span>갤러리</span><span>성과필터</span><span>배너비교</span><span>등급산정</span><span>CSV연동</span></div>
+              <span class="go">라이브러리 열기 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </button>
+
+          <!-- 키워드 분석 대시보드 -->
+          <button class="mod" onclick="show('kw')">
+            <div class="illus">
+              <div class="illus-chrome"><i></i><i></i><i></i><span>키워드 데이터랩</span></div>
+              <div class="illus-body">
+                <div class="kw-funnel">
+                  <div class="kf"><span class="kf-l">노출</span><div class="kf-track"><div class="kf-bar b1" style="width:100%"></div></div><span class="kf-v">1.2M</span></div>
+                  <div class="kf"><span class="kf-l">클릭</span><div class="kf-track"><div class="kf-bar b2" style="width:62%"></div></div><span class="kf-v">48K</span></div>
+                  <div class="kf"><span class="kf-l">설계</span><div class="kf-track"><div class="kf-bar b3" style="width:34%"></div></div><span class="kf-v">3,140</span></div>
+                  <div class="kf"><span class="kf-l">청약</span><div class="kf-track"><div class="kf-bar b4" style="width:18%"></div></div><span class="kf-v">612</span></div>
+                </div>
+                <div class="kw-tags"><span># 브랜드</span><span># 일반</span><span># 경쟁사</span></div>
+              </div>
+            </div>
+            <div class="body">
+              <div class="head">
+                <div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></div>
+                <div class="mt"><b>키워드 데이터랩</b><span>KEYWORD DATALAB</span></div>
+              </div>
+              <p class="use">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+                검색·키워드 광고의 노출→클릭→설계→청약 전환 흐름과 매체·키워드별 효율을 볼 때
+              </p>
+              <div class="feats"><span>종합요약</span><span>추이분석</span><span>전환퍼널</span><span>채널·매체</span><span>키워드</span></div>
+              <span class="go">대시보드 열기 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg></span>
+            </div>
+          </button>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- 성과 분석 대시보드 (지연 로딩) -->
+    <div class="view" id="view-mkt"><iframe id="if-mkt" title="성과 분석 대시보드" data-src="mkt_dashboard.html"></iframe></div>
+
+    <!-- 배너 소재 라이브러리 (지연 로딩) -->
+    <div class="view" id="view-bn"><iframe id="if-bn" title="크리에이티브 라이브러리" data-src="bn_library.html"></iframe></div>
+
+    <!-- 키워드 분석 대시보드 (지연 로딩) -->
+    <div class="view" id="view-kw"><iframe id="if-kw" title="키워드 데이터랩" data-src="keyword_dashboard.html"></iframe></div>
+
+  </div>
+</div>
+
+<script>
+/* ===== 뷰 전환 + iframe 지연 로딩 (원본 무수정 연결, 상대경로) ===== */
+function show(v){
+  if(v==='mkt'||v==='bn'||v==='kw'){
+    var f = document.getElementById('if-'+v);
+    if(!f.src && f.dataset.src){ f.src = f.dataset.src; }
+  }
+  document.querySelectorAll('.view').forEach(function(el){ el.classList.remove('on'); });
+  document.getElementById('view-'+v).classList.add('on');
+  document.querySelectorAll('#nav button').forEach(function(b){
+    b.classList.toggle('on', b.dataset.v===v);
+  });
+}
+
+/* ===== 전역 다크모드 — localStorage 'cm_dark' 단일 소스, 'storage' 이벤트로 두 iframe 자동 동기화 ===== */
+function applyTheme(dark){ document.body.classList.toggle('dark', !!dark); }
+function toggleTheme(){
+  var dark = !document.body.classList.contains('dark');
+  localStorage.setItem('cm_dark', dark ? '1' : '0');
+  applyTheme(dark);
+  /* 이미 로드된 iframe은 직접 호출(백업) — 미로드/타 컨텍스트는 storage 이벤트로 반영 */
+  ['if-mkt','if-bn','if-kw'].forEach(function(id){
+    var f = document.getElementById(id);
+    if(f && f.src){ try{ if(f.contentWindow && f.contentWindow.__setTheme) f.contentWindow.__setTheme(dark); }catch(e){} }
+  });
+}
+window.addEventListener('storage', function(e){ if(e.key==='cm_dark') applyTheme(e.newValue==='1'); });
+applyTheme(localStorage.getItem('cm_dark')==='1');
+</script>
+</body>
+</html>

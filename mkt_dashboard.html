@@ -709,7 +709,14 @@ tbody tr.pred-row td:first-child::after {
 <script>
 // ===== CONSTANTS =====
 const LS = ['오가닉','퍼포먼스','제휴','비교추천 플랫폼','채널 시너지'];
-const LC = ['#f97316','#22c55e','#3b82f6','#ef4444','#8b5cf6'];
+const LC = ['#f97316','#22c55e','#3b82f6','#ef4444','#8b5cf6','#94a3b8']; // 마지막(회색)은 '미분류'용
+
+// 인덱스(AFCCD) 미등록분이 '미분류'로 집계되면, 표시용 채널 목록에 '미분류'를 추가.
+// → 채널별 합계 = 전체 합계가 되어 합계 불일치(요약 vs 채널분석)가 사라진다.
+function dispLS(){
+  const has = (typeof LM!=='undefined') && LM.some(r=>r.l==='미분류' && (r.nc||r.rc||r.np||r.rp));
+  return has ? LS.concat('미분류') : LS.slice();
+}
 
 const ANOMALY_PERIODS = {
   mkt_min: { months: ['2024-11','2024-12','2025-01','2025-02','2025-03','2025-04'], label: '마케팅 최소화' },
@@ -2620,7 +2627,21 @@ async function handleRawUpload(buf, file, statusEl){
     // 첫 매칭 시트에서 컬럼명 확정 (이후 시트는 동일 컬럼명 가정)
     if(!dateCol){
       dateCol  = dc;
-      typeCol  = ['신규갱신','신규/갱신'].find(c => ks.includes(c));
+      typeCol  = ['신규갱신','신규/갱신','구분'].find(c => ks.includes(c));
+      if(!typeCol){
+        // 헤더명이 달라도 값이 '신규'/'갱신' 두 종류로만 채워진 컬럼을 자동 탐지
+        typeCol = ks.find(c => {
+          let n=0, ok=true;
+          for(const r of rows){
+            const v=String(r[c]||'').replace(/\s/g,'');
+            if(!v) continue;
+            n++;
+            if(v!=='신규' && v!=='갱신'){ ok=false; break; }
+            if(n>=20) break;
+          }
+          return ok && n>0;
+        });
+      }
       afccdCol = ac;
       cntCol   = ['CNT','건수'].find(c => ks.includes(c));
       revCol   = ['적용보험료','매출'].find(c => ks.includes(c));
@@ -2630,6 +2651,10 @@ async function handleRawUpload(buf, file, statusEl){
   }
   if(!allRows.length || !dateCol){
     statusEl.textContent = '❌ raw 파일에서 계상일/AFCCD 열을 찾을 수 없습니다.';
+    return;
+  }
+  if(!typeCol){
+    statusEl.textContent = "❌ 신규/갱신 구분 컬럼을 찾을 수 없습니다. (헤더 '신규갱신' 또는 값이 신규/갱신인 컬럼이 필요합니다)";
     return;
   }
 
@@ -2676,10 +2701,11 @@ async function handleRawUpload(buf, file, statusEl){
       const isNew = typeStr.includes('신규');
       if(!isNew && !typeStr.includes('갱신')) continue;
 
-      const prod   = String(row['상품명']||'').replace(/\s/g,'');
-      const cancel = String(row['입금세부원인코드']||'').replace(/\s/g,'');
-      const cnt = prod.includes('퍼아워')          ? 0 : parseRawNum(row[cntCol]);
-      const rev = (cancel==='해지'||cancel==='해지환입') ? 0 : parseRawNum(row[revCol]);
+      const prod = String(row['상품명']||'').replace(/\s/g,'');
+      // 퍼아워 상품은 건수에서 제외(매출은 포함).
+      const cnt = prod.includes('퍼아워') ? 0 : parseRawNum(row[cntCol]);
+      // 취소·해지·해지환입·환급·추징은 음수 값을 그대로 반영해 순합산(net).
+      const rev = parseRawNum(row[revCol]);
       if(cnt===0 && rev===0) continue;
 
       let mapping = afccMap[afccd];
@@ -2775,7 +2801,8 @@ async function handleRawUpload(buf, file, statusEl){
     msg += ` · 날짜 파싱 실패 ${unparsed}건`;
   }
   if(missingCodes.size>0){
-    msg += ` ⚠️ 미분류 코드 ${missingCodes.size}개 (인덱스 업데이트 필요)`;
+    const unclCnt = newDL.filter(r=>r.l==='미분류').reduce((s,r)=>s+r.nc+r.rc,0);
+    msg += ` ⚠️ 미분류 코드 ${missingCodes.size}개 / ${fN(unclCnt)}건 (채널분석에 '미분류'로 표시됨 · 인덱스 업데이트 권장)`;
     console.warn('누락 AFCCD 코드:', [...missingCodes]);
   }
   statusEl.textContent = msg;
@@ -4600,7 +4627,7 @@ function rDaily(el){
     html+=`<div class="card"><div class="card-title">${dailySelDate} 채널별 실적</div><div class="tbl-wrap"><table>
       <thead><tr><th>채널</th><th>신규건수</th><th>갱신건수</th><th>합계</th><th>신규매출</th><th>갱신매출</th><th>합산매출</th></tr></thead><tbody>`;
     
-    for(const catName of LS){
+    for(const catName of dispLS()){
       const cat = dlMap.get(catName) || {l:catName,...Z};
       const catId = 'acc_'+dailySelDate.replace(/-/g,'')+'_'+catName.replace(/\s/g,'');
       const tree = CHANNEL_TREE[catName] || {};
@@ -4986,8 +5013,9 @@ function renderChannelCharts(){
   
   if(selL==='전체'){
     // Stacked by channel
-    const datasets=[...LS].reverse().map((l,revIdx)=>{
-      const i=LS.length-1-revIdx;
+    const _ls=dispLS();
+    const datasets=[..._ls].reverse().map((l,revIdx)=>{
+      const i=_ls.length-1-revIdx;
       return { label:l,
         data:displayMonths.map(m=>{
           const r=data.find(x=>x.m===m&&x.l===l);
@@ -5015,7 +5043,7 @@ function renderChannelCharts(){
     // NC by channel
     createChart('ch-channel-nc',{
       type:'line',
-      data:{labels,datasets:LS.map((l,i)=>({
+      data:{labels,datasets:_ls.map((l,i)=>({
         label:l,
         data:displayMonths.map(m=>{const r=data.find(x=>x.m===m&&x.l===l);return r?r.nc:0;}),
         borderColor:LC[i],backgroundColor:'transparent',borderWidth:2,pointRadius:1,tension:.3
@@ -5026,7 +5054,7 @@ function renderChannelCharts(){
     // RC by channel
     createChart('ch-channel-rc',{
       type:'line',
-      data:{labels,datasets:LS.map((l,i)=>({
+      data:{labels,datasets:_ls.map((l,i)=>({
         label:l,
         data:displayMonths.map(m=>{const r=data.find(x=>x.m===m&&x.l===l);return r?r.rc:0;}),
         borderColor:LC[i],backgroundColor:'transparent',borderWidth:2,pointRadius:1,tension:.3
@@ -5148,7 +5176,7 @@ function buildChannelTable(){
   </div><div class="tbl-wrap"><table id="ch-table">
     <thead><tr><th>채널</th><th>합산매출</th><th>비중</th><th>신규건수</th><th>갱신건수</th><th>신규매출</th><th>갱신매출</th><th>사업비</th><th>사업비율</th></tr></thead><tbody>`;
 
-  for(const catName of LS){
+  for(const catName of dispLS()){
     const r=aggLM[catName]||{...Z};
     const tp=r.np+r.rp;
     const share=totalTP?(tp/totalTP*100).toFixed(1)+'%':'-';

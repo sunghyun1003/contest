@@ -22,8 +22,7 @@ body.dark{
   --accent-soft:rgba(249,115,22,.15);
   --blue:#98a3d4; --cyan:#74b3c0; --purple:#b3a6d6; --amber:#e0b884; --pink:#e0a3a3;
 }
-/* 다크모드 차트 — 캔버스 채도 완화(성과분석 대시보드와 톤 통일) */
-body.dark canvas{ filter:saturate(.85) brightness(.97); }
+/* 다크모드 차트: Chart.defaults로 색상 직접 제어 (kwApplyChartTheme) — canvas filter 불필요 */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{margin:0;padding:0;}
 body{
@@ -558,7 +557,7 @@ async function handleFile(file){
     await idbSet('current',DATA);
     initFiltersFromData();showApp();renderAll();
     toast('불러오기 완료 · '+fI(DATA.n)+'행');
-  }catch(e){console.error(e);alert('파일을 불러오지 못했습니다.\n'+(e.message||e));}
+  }catch(e){console.error(e);toast('파일 불러오기 실패: '+(e.message||e));}
   finally{overlay(false);}
 }
 
@@ -1090,9 +1089,9 @@ function renderSortTable(box,rows,dimKey,metricCols,sortable,limit){
 function serializeData(){const o={v:1,n:DATA.n,minDay:DATA.minDay,maxDay:DATA.maxDay,meta:DATA.meta,date:Array.from(DATA.date),imp:Array.from(DATA.imp),clk:Array.from(DATA.clk),cost:Array.from(DATA.cost),design:Array.from(DATA.design),apply:Array.from(DATA.apply),rank:Array.from(DATA.rank),dims:{}};DIM_KEYS.forEach(k=>o.dims[k]={labels:DATA.dims[k].labels,codes:Array.from(DATA.dims[k].codes)});return o;}
 function deserializeData(o){const d={n:o.n,minDay:o.minDay,maxDay:o.maxDay,meta:o.meta,date:Int32Array.from(o.date),imp:Float64Array.from(o.imp),clk:Float64Array.from(o.clk),cost:Float64Array.from(o.cost),design:Float64Array.from(o.design),apply:Float64Array.from(o.apply),rank:Float64Array.from(o.rank),dims:{}};DIM_KEYS.forEach(k=>d.dims[k]={labels:o.dims[k].labels,codes:Int32Array.from(o.dims[k].codes)});return d;}
 function download(name,blob){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-function shareFull(){closeShare();overlay(true,'공유 파일 생성 중…');setTimeout(()=>{try{const json=JSON.stringify(serializeData()).replace(/<\//g,'<\\/');let html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;html=html.replace(/<script id="embedded-data">[\s\S]*?<\/script>/,'');const inject='<script id="embedded-data">window.__EMBEDDED_DATA__='+json+';<\/script>';html=html.replace(/<body[^>]*>/,m=>m+'\n'+inject);download('키워드분석_'+DATA.meta.dateMin+'_'+DATA.meta.dateMax+'.html',new Blob([html],{type:'text/html'}));toast('공유 HTML 다운로드 완료');}catch(e){alert('생성 실패: '+e.message);}finally{overlay(false);}},40);}
+function shareFull(){closeShare();overlay(true,'공유 파일 생성 중…');setTimeout(()=>{try{const json=JSON.stringify(serializeData()).replace(/<\//g,'<\\/');let html='<!DOCTYPE html>\n'+document.documentElement.outerHTML;html=html.replace(/<script id="embedded-data">[\s\S]*?<\/script>/,'');const inject='<script id="embedded-data">window.__EMBEDDED_DATA__='+json+';<\/script>';html=html.replace(/<body[^>]*>/,m=>m+'\n'+inject);download('키워드분석_'+DATA.meta.dateMin+'_'+DATA.meta.dateMax+'.html',new Blob([html],{type:'text/html'}));toast('공유 HTML 다운로드 완료');}catch(e){toast('생성 실패: '+e.message);}finally{overlay(false);}},40);}
 function exportJSON(){closeShare();download('키워드데이터_'+DATA.meta.dateMin+'_'+DATA.meta.dateMax+'.json',new Blob([JSON.stringify(serializeData())],{type:'application/json'}));toast('데이터 JSON 다운로드 완료');}
-async function importJSON(file){overlay(true,'불러오는 중…');try{const o=JSON.parse(await file.text());DATA=deserializeData(o);await idbSet('current',DATA);initFiltersFromData();showApp();renderAll();toast('JSON 불러오기 완료');}catch(e){alert('JSON 형식 오류: '+e.message);}finally{overlay(false);}}
+async function importJSON(file){overlay(true,'불러오는 중…');try{const o=JSON.parse(await file.text());DATA=deserializeData(o);await idbSet('current',DATA);initFiltersFromData();showApp();renderAll();toast('JSON 불러오기 완료');}catch(e){toast('JSON 형식 오류: '+e.message);}finally{overlay(false);}}
 async function resetData(){if(!confirm('현재 데이터를 삭제하고 초기 화면으로 돌아갈까요?'))return;await idbDel('current');DATA=null;location.reload();}
 function closeShare(){document.getElementById('share-panel').classList.remove('open');}
 document.getElementById('share-btn').onclick=e=>{e.stopPropagation();document.getElementById('share-panel').classList.toggle('open');};

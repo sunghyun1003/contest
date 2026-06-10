@@ -103,8 +103,7 @@ body.dark {
   --cyan: #dd9863;
   --gold: #dd9863;
 }
-/* 다크모드 차트 — 캔버스 desaturation 필터로 데이터 색상 부드럽게 */
-body.dark canvas { filter: saturate(0.82) brightness(0.96); }
+/* 다크모드 차트: mktSetTheme에서 Chart.defaults로 직접 제어 — canvas filter 불필요 */
 /* 다크모드 업로드 버튼 — ghost 스타일 + 신규 accent 톤 반영 */
 body.dark .upload-btn {
   background: rgba(221,152,99,.14);
@@ -568,6 +567,12 @@ tbody tr.pred-row td:first-child::after {
 .fc-decomp-row { display: flex; justify-content: space-between; font-size: 11px; padding: 3px 0; }
 .fc-decomp-row .dl { color: var(--text3); }
 .fc-decomp-row .dv { color: var(--text2); font-weight: 500; }
+
+/* ─── Toast 알림 ─── */
+#mkt-toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);z-index:9999;
+  background:#1e293b;color:#f1f5f9;padding:10px 20px;border-radius:8px;font-size:13px;
+  box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transition:transform .25s,opacity .25s;pointer-events:none;white-space:nowrap;}
+#mkt-toast.on{transform:translateX(-50%) translateY(0);opacity:1;}
 
 </style>
 </head>
@@ -2789,7 +2794,7 @@ async function handleRawUpload(buf, file, statusEl){
 }
 
 function handleExportJSON(){
-  if(!M.length){ alert('내보낼 데이터가 없습니다.'); return; }
+  if(!M.length){ mktToast('내보낼 데이터가 없습니다.'); return; }
   const payload=JSON.stringify({M,LM,MM,D,DL,DA,RENEWAL_ARRIVALS,RENEWAL_HISTORY,BIZ_COST,exportedAt:new Date().toISOString()},null,2);
   const blob=new Blob([payload],{type:'application/json'});
   const a=document.createElement('a');
@@ -3521,6 +3526,7 @@ function chTableCollapseAll(){
 }
 function mktSetTheme(dark){
   document.body.classList.toggle('dark', !!dark);
+  try{ Chart.defaults.color=dark?'#aab2c0':'#64748b'; Chart.defaults.borderColor=dark?'rgba(255,255,255,.08)':'rgba(0,0,0,.06)'; }catch(e){}
   render();
 }
 function toggleDark(){
@@ -5580,7 +5586,7 @@ function rSummary(el){
 // 요약 탭 → 이미지 추출 (Canvas 직접 드로잉 방식 — SVG foreignObject는 Chrome file:// 환경에서 미작동)
 async function exportSummaryImage(){
   const root=document.getElementById('summary-root');
-  if(!root||!D.length){alert('데이터가 없어 추출할 수 없습니다.');return;}
+  if(!root||!D.length){mktToast('데이터가 없어 추출할 수 없습니다.');return;}
   const btn=document.getElementById('sum-export-btn');
   const old=btn?btn.textContent:'';
   if(btn){btn.disabled=true;btn.textContent='⏳ 이미지 생성 중...';}
@@ -5702,7 +5708,7 @@ async function exportSummaryImage(){
     }
   }catch(e){
     console.error('이미지 추출 오류:',e);
-    alert('이미지 추출 실패: '+e.message);
+    mktToast('이미지 추출 실패: '+e.message);
     if(btn){btn.textContent=old;btn.disabled=false;}
   }
 }
@@ -5800,7 +5806,7 @@ function rAlerts(el){
 // === 공유용 HTML 내보내기 ===
 async function handleExportShare(){
   if(!D.length && !M.length){
-    alert('내보낼 데이터가 없습니다. 먼저 엑셀을 업로드하세요.');
+    mktToast('내보낼 데이터가 없습니다. 먼저 엑셀을 업로드하세요.');
     return;
   }
   
@@ -6170,6 +6176,15 @@ document.readyState==='loading'
   s.textContent='.side-brand,.side-sub{display:none!important}.side-nav{padding-top:8px}#dark-btn{display:none!important}';
   (document.head||document.documentElement).appendChild(s);
 })();
+
+// ─── Toast 알림 ───
+var mktToastT;
+function mktToast(msg){
+  var el=document.getElementById('mkt-toast');
+  el.textContent=msg;el.classList.add('on');
+  clearTimeout(mktToastT);mktToastT=setTimeout(function(){el.classList.remove('on');},2800);
+}
 </script>
+<div id="mkt-toast"></div>
 </body>
 </html>

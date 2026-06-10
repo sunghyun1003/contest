@@ -86,8 +86,8 @@ body.dark {
   --border: rgba(255,255,255,.08);
   --border2: rgba(255,255,255,.14);
   --text: #e8e8ec;
-  --text2: #9ca3af;
-  --text3: #6b7280;
+  --text2: #aab2c0;  /* ← #9ca3af에서 통일: 다른 대시보드와 동일 warm blue-gray */
+  --text3: #8892a4;  /* ← #6b7280에서 상향: 다크 배경 대비 ~6:1 확보 */
   --shadow: 0 2px 12px rgba(0,0,0,.5);
   --shadow2: 0 1px 4px rgba(0,0,0,.4);
   /* 다크모드 컬러 — 채도 35~40% 감소, 명도 58~64% 유지
@@ -126,6 +126,7 @@ body {
   color: var(--text);
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
+  transition: background-color .2s, color .2s;
 }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -384,8 +385,8 @@ body.dark .tab-btn.active .ti { color: #e9ab7f; }
 
 /* === TABLES === */
 .tbl-wrap {
-  overflow-x: auto; border-radius: 10px;
-  border: 1px solid var(--border);
+  overflow-x: auto; overflow-y: auto; max-height: 520px;
+  border-radius: 10px; border: 1px solid var(--border);
 }
 table { width: 100%; border-collapse: collapse; font-size: 12px; }
 thead th {
@@ -6023,6 +6024,7 @@ async function init(){
   // 다크모드 복원 (localStorage 'cm_dark' — 통합 셸/배너와 공유)
   if(localStorage.getItem('cm_dark')==='1'){
     document.body.classList.add('dark');
+    try{ Chart.defaults.color='#aab2c0'; Chart.defaults.borderColor='rgba(255,255,255,.08)'; }catch(e){}
   }
   // 0. 제출용 데모 데이터 — 항상 우선 (저장된 실데이터보다 먼저)
   try{

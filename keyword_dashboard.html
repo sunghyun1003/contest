@@ -18,8 +18,12 @@
 body.dark{
   --bg:#111318; --bg2:#1c1e26; --bg3:#1c1e26; --bg4:#181a21; --bg5:#252733;
   --border:rgba(255,255,255,.08); --border2:rgba(255,255,255,.14);
-  --text:#e8eaf0; --text2:#aab2c0; --text3:#6b7585;
+  --text:#e8eaf0; --text2:#aab2c0; --text3:#8892a4;  /* ← #6b7585에서 상향: 대비 ~6:1 */
   --accent-soft:rgba(249,115,22,.15);
+  /* 상태색: mkt_dashboard와 동일한 머티리얼 다크 팔레트 적용 (채도 ~38% 감소) */
+  --green:#7cc295; --green2:#a4d2b3;
+  --red:#d68080;   --red2:#e2a3a3;
+  /* 키워드 데이터랩 고유 차트 분석 색상 — 채도 완화, hue 보존 */
   --blue:#98a3d4; --cyan:#74b3c0; --purple:#b3a6d6; --amber:#e0b884; --pink:#e0a3a3;
 }
 /* 다크모드 차트: Chart.defaults로 색상 직접 제어 (kwApplyChartTheme) — canvas filter 불필요 */

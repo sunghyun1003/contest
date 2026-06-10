@@ -11,13 +11,13 @@
   --text:#1e293b; --text2:#64748b; --text3:#94a3b8;
   --line:#e2e8f0; --line2:#cbd5e1;
   --accent:#f97316; --accent2:#ea580c; --accent-dim:rgba(249,115,22,.10);
-  --green:#22c55e; --blue:#3b82f6;
+  --green:#22c55e; --red:#dc2626; --blue:#3b82f6;
   --shadow:0 2px 12px rgba(15,23,42,.06); --shadow2:0 16px 36px rgba(15,23,42,.14);
 }
 /* 다크 테마: 변수만 교체하면 셸 전체가 다크로 전환 */
 body.dark{
   --bg:#0d0f14; --surface:#161a22; --surface2:#1b202b;
-  --text:#f2f4f8; --text2:#aab2c0; --text3:#7b8494;
+  --text:#f2f4f8; --text2:#aab2c0; --text3:#8892a4;
   --line:#262d3a; --line2:#3a4250;
   --shadow:0 2px 12px rgba(0,0,0,.45); --shadow2:0 16px 36px rgba(0,0,0,.6);
 }
@@ -28,6 +28,7 @@ body{
     -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   background:var(--bg); color:var(--text);
   -webkit-font-smoothing:antialiased; overflow:hidden;
+  transition:background-color .2s,color .2s;
 }
 button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit}
 
@@ -139,6 +140,9 @@ body.dark .theme-btn .ic-sun{ display:block; }
 .bt i{font-size:8px; font-weight:800; color:#fff; background:rgba(15,23,42,.5); padding:1px 5px; border-radius:4px; font-style:normal; backdrop-filter:blur(2px)}
 .bt .g{position:absolute; top:5px; right:5px; width:9px; height:9px; border-radius:50%; border:1.5px solid rgba(255,255,255,.9)}
 .g-exc{background:#22c55e} .g-good{background:#3b82f6} .g-avg{background:#f59e0b}
+body.dark .g-exc{background:rgba(34,197,94,.3);border-color:rgba(74,222,128,.5)}
+body.dark .g-good{background:rgba(59,130,246,.3);border-color:rgba(147,197,253,.5)}
+body.dark .g-avg{background:rgba(245,158,11,.3);border-color:rgba(252,211,77,.5)}
 .bt1{background:linear-gradient(135deg,#fb923c,#f97316)}
 .bt2{background:linear-gradient(135deg,#fdba74,#fb7c2d)}
 .bt3{background:linear-gradient(135deg,#334155,#0f172a)}

@@ -119,8 +119,8 @@ body.dark .border-slate-100{border-color:#1b202b !important;}
 body.dark .text-slate-800{color:#e8eaf0 !important;}
 body.dark .text-slate-700{color:#d1d5db !important;}
 body.dark .text-slate-600{color:#aab2c0 !important;}
-body.dark .text-slate-500{color:#9aa3b2 !important;}
-body.dark .text-slate-400{color:#7b8494 !important;}
+body.dark .text-slate-500{color:#aab2c0 !important;}  /* ← text2 통일 */
+body.dark .text-slate-400{color:#8892a4 !important;}  /* ← text3 통일: 대비 ~6:1 */
 body.dark .bg-orange-100{background:rgba(249,115,22,.18) !important;}
 body.dark .text-orange-600{color:#fb923c !important;}
 body.dark #sidebar{background:#161a22 !important;}
@@ -129,7 +129,7 @@ body.dark .nav-link{color:#aab2c0;}
 body.dark .nav-link:hover{background:#1b202b;color:#f2f4f8;}
 body.dark .nav-link.active{background:rgba(249,115,22,.16);color:#fb923c;}
 body.dark .nav-link.active .nav-icon{color:#f97316;}
-body.dark .nav-icon{color:#6b7280;}
+body.dark .nav-icon{color:#8892a4;}  /* ← text3 통일 */
 body.dark .btn-ghost{background:#1b202b !important;color:#cbd5e1 !important;}
 body.dark .form-label{color:#cbd5e1 !important;}
 body.dark input,body.dark select,body.dark textarea{background:#1b202b !important;color:#e8eaf0 !important;border-color:#2a3140 !important;}
@@ -208,6 +208,8 @@ body.dark .bn-theme-btn:hover{color:#fb923c;border-color:#f97316;}
 body.dark .bn-theme-btn .ic-moon{display:none;}
 body.dark .bn-theme-btn .ic-sun{display:block;}
 /* 다크모드 차트: Chart.defaults로 색상 직접 제어 (bnSetTheme) — canvas filter 불필요 */
+/* ─── 테마 전환 부드러운 트랜지션 ─── */
+body { transition: background-color .2s, color .2s, border-color .2s; }
 /* ─── Toast 알림 ─── */
 #bn-toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);z-index:9999;
   background:#1e293b;color:#f1f5f9;padding:10px 20px;border-radius:8px;font-size:13px;

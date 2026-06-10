@@ -993,6 +993,9 @@ function isAnomalyMonth(m){
 
 function safe(v){ return (v==null||isNaN(v)||!isFinite(v))?0:v; }
 
+// 사용자 데이터(엑셀 채널명 등)를 innerHTML에 넣기 전 이스케이프 — 셀에 HTML 특수문자가 있어도 화면이 깨지지 않도록
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
 // Format helpers
 function fmt(n){
   if(n==null||isNaN(n)) return '-';
@@ -2151,6 +2154,7 @@ function parseSheet(wb, wsName){
 function handleUpload(event){
   const file=event.target.files[0];
   if(!file) return;
+  if(file.size>50*1024*1024){mktToast('파일이 너무 큽니다 (최대 50MB). 기간을 나눠 업로드해 주세요.');event.target.value='';return;}
 
   const uploadBtn=document.querySelector('.upload-btn');
   if(uploadBtn) uploadBtn.disabled=true;
@@ -5573,7 +5577,7 @@ function rSummary(el){
       h+=`<div style="display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--bg2);border-left:3px solid ${col};border-radius:6px">
         <div style="font-size:15px;color:${col};font-weight:700">${inc?'▲':'▼'}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-size:12px;font-weight:600;color:var(--text)">${a.channel} · ${a.metric}</div>
+          <div style="font-size:12px;font-weight:600;color:var(--text)">${esc(a.channel)} · ${esc(a.metric)}</div>
           <div style="font-size:10px;color:var(--text3)">${a.type}</div>
         </div>
         <div style="font-size:14px;font-weight:800;color:${col}">${inc?'+':''}${(a.change*100).toFixed(1)}%</div>
@@ -5786,13 +5790,13 @@ function rAlerts(el){
       const isInc=a.change>0;
       const pctStr=(a.change*100).toFixed(1);
       const suggestion=isInc
-        ?`${a.channel} ${label}이(가) 크게 증가했습니다. 원인 파악 후 성과가 좋은 채널의 예산 확대를 검토하세요.`
-        :`${a.channel} ${label}이(가) 크게 감소했습니다. 채널 장애나 경쟁사 프로모션 등 외부 요인을 확인하세요.`;
+        ?`${esc(a.channel)} ${label}이(가) 크게 증가했습니다. 원인 파악 후 성과가 좋은 채널의 예산 확대를 검토하세요.`
+        :`${esc(a.channel)} ${label}이(가) 크게 감소했습니다. 채널 장애나 경쟁사 프로모션 등 외부 요인을 확인하세요.`;
       const valFmt = v => isMoney ? fmtB(v) : fN(v);
       html+=`<div class="alert-card ${isInc?'inc':'dec'}">
         <div class="alert-icon">${isInc?'▲':'▼'}</div>
         <div class="alert-body">
-          <div class="alert-title">${a.date.slice(5)} ${a.channel} ${label} — ${a.type} ${isInc?'+':''}${pctStr}%</div>
+          <div class="alert-title">${a.date.slice(5)} ${esc(a.channel)} ${label} — ${a.type} ${isInc?'+':''}${pctStr}%</div>
           <div class="alert-desc">${suggestion}</div>
           <div class="alert-meta">${valFmt(a.prev)} → ${valFmt(a.value)} (${a.type})</div>
         </div>

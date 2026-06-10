@@ -468,6 +468,8 @@ const COL={accent:'#f97316',accent2:'#fb923c',green:'#16a34a',red:'#dc2626',blue
 const SERIES=['#f97316','#5c9ead','#7c89c0','#6fb094','#d9a55f','#d68a8a','#94a3b8','#9b8bbf','#c0876f'];
 
 const nf=new Intl.NumberFormat('ko-KR');
+/* 사용자 데이터(키워드명/캠페인명 등)를 innerHTML에 넣기 전 이스케이프 — 엑셀 셀에 HTML 특수문자가 있어도 화면이 깨지지 않도록 */
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const fI=v=>nf.format(Math.round(v||0));
 const fWon=v=>nf.format(Math.round(v||0))+'원';
 const fPct=(v,d=1)=>((isFinite(v)?v:0)*100).toFixed(d)+'%';
@@ -512,8 +514,10 @@ async function idbDel(k){const db=await idbOpen();return new Promise((res,rej)=>
 /* ============================================================
    Parse & build dataset
    ============================================================ */
+const MAX_IMPORT_ROWS = 500000;   // 브라우저 메모리 보호용 상한
 function buildDataset(aoa,fileName){
   if(!aoa||aoa.length<2)throw new Error('데이터 행이 없습니다.');
+  if(aoa.length-1>MAX_IMPORT_ROWS)throw new Error('행 수가 너무 많습니다 (최대 '+MAX_IMPORT_ROWS.toLocaleString()+'행). 기간을 나눠 업로드해 주세요.');
   const header=aoa[0].map(h=>String(h==null?'':h).replace(/\s+/g,''));
   const idx=nm=>header.indexOf(nm);
   const col={
@@ -532,23 +536,30 @@ function buildDataset(aoa,fileName){
   const codes={};DIM_KEYS.forEach(k=>codes[k]=new Int32Array(cap));
   const intern=(k,v)=>{const s=(v==null||v==='')?'(미지정)':String(v);const d=dict[k];let c=d.map.get(s);if(c===undefined){c=d.labels.length;d.map.set(s,c);d.labels.push(s);}return c;};
   const toDay=v=>{if(v==null||v==='')return null;if(typeof v==='number'&&isFinite(v))return Math.round(v-25569);const dt=v instanceof Date?v:new Date(v);if(isNaN(dt))return null;return Math.floor(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())/86400000);};
-  let n=0,minDay=Infinity,maxDay=-Infinity;
+  let n=0,minDay=Infinity,maxDay=-Infinity,badNum=0,badDate=0;
+  // 숫자 변환 검증: 비어있지 않은데 숫자가 아닌 셀은 0으로 처리하되 건수를 집계해 사용자에게 알림
+  const num=v=>{if(v==null||v==='')return 0;const x=+v;if(Number.isFinite(x))return x;badNum++;return 0;};
   for(let r=1;r<aoa.length;r++){
     const row=aoa[r];if(!row)continue;
-    const day=toDay(row[col.date]);if(day===null)continue;
+    const day=toDay(row[col.date]);if(day===null){if(row[col.date]!=null&&row[col.date]!=='')badDate++;continue;}
     date[n]=day;if(day<minDay)minDay=day;if(day>maxDay)maxDay=day;
     for(const k of DIM_KEYS)codes[k][n]=col[k]>=0?intern(k,row[col[k]]):intern(k,null);
-    imp[n]=+row[col.imp]||0;clk[n]=+row[col.clk]||0;cost[n]=+row[col.cost]||0;
-    design[n]=+row[col.design]||0;apply[n]=+row[col.apply]||0;rank[n]=+row[col.rank]||0;
+    imp[n]=num(row[col.imp]);clk[n]=num(row[col.clk]);cost[n]=num(row[col.cost]);
+    design[n]=num(row[col.design]);apply[n]=num(row[col.apply]);rank[n]=num(row[col.rank]);
     n++;
   }
   if(n===0)throw new Error('유효한 일자 데이터가 없습니다.');
+  if(badNum>0||badDate>0){
+    let w=[];if(badDate)w.push('날짜 인식 실패 '+badDate+'행 제외');if(badNum)w.push('숫자 아닌 셀 '+badNum+'개를 0으로 처리');
+    setTimeout(()=>toast('⚠ '+w.join(' · ')),300);
+  }
   const dims={};DIM_KEYS.forEach(k=>dims[k]={labels:dict[k].labels,codes:codes[k].slice(0,n)});
   return{n,minDay,maxDay,date:date.slice(0,n),imp:imp.slice(0,n),clk:clk.slice(0,n),cost:cost.slice(0,n),design:design.slice(0,n),apply:apply.slice(0,n),rank:rank.slice(0,n),dims,
     meta:{fileName:fileName||'data.xlsx',rows:n,uploadedAt:Date.now(),dateMin:dayToISO(minDay),dateMax:dayToISO(maxDay)}};
 }
 
 async function handleFile(file){
+  if(file.size>50*1024*1024){toast('파일이 너무 큽니다 (최대 50MB). 기간을 나눠 업로드해 주세요.');return;}
   overlay(true,'엑셀 파싱 중…');
   try{
     const buf=await file.arrayBuffer();
@@ -662,7 +673,16 @@ function renderAll(){
 }
 function renderTab(tab){
   const fn={summary:renderSummary,trend:renderTrend,channel:renderChannel,keyword:renderKeyword,insights:renderInsights}[tab];
-  destroyCharts();fn();
+  destroyCharts();
+  /* 필터 결과 0건 → 빈 차트 대신 명확한 안내 표시 */
+  const sec=secEl(tab);
+  if(current.daily&&current.daily.length===0){
+    sec.innerHTML='<div class="empty-note" style="padding:80px 20px"><div style="font-size:40px;opacity:.4;margin-bottom:14px">🔍</div>'
+      +'<div style="font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px">조건에 맞는 데이터가 없습니다</div>'
+      +'<div>기간 또는 필터를 조정해 보세요</div></div>';
+    return;
+  }
+  fn();
 }
 function secEl(tab){return document.querySelector('.sec[data-tab="'+tab+'"]');}
 document.getElementById('tabs').addEventListener('click',e=>{
@@ -982,7 +1002,7 @@ function buildPlannerTable(search){
     const moCtr=mo&&mo.imp?fPct(mo.clk/mo.imp):'—';
     const avgMonthImp=Math.round(d.imp/nMonths);
     h+='<tr>'
-      +'<td class="label" title="'+d.label+'"><span class="kw-link">'+d.label+'</span></td>'
+      +'<td class="label" title="'+esc(d.label)+'"><span class="kw-link">'+esc(d.label)+'</span></td>'
       +'<td>'+fI(pcImp)+'</td><td>'+fI(moImp)+'</td>'
       +'<td>'+fI(pcClk)+'</td><td>'+fI(moClk)+'</td>'
       +'<td>'+pcCtr+'</td><td>'+moCtr+'</td>'
@@ -1080,7 +1100,7 @@ function renderSortTable(box,rows,dimKey,metricCols,sortable,limit){
   let data=rows.slice().sort((a,b)=>((a[sk]||0)-(b[sk]||0))*sd);
   if(limit)data=data.slice(0,limit);
   let h='<table class="dt"><thead><tr><th>'+DIM_LABEL[dimKey]+'</th>'+metricCols.map(c=>'<th class="'+(sortable?'sortable':'')+'" data-c="'+c+'">'+(COLDEF3[c]?COLDEF3[c][0]:c)+(sortable&&c===sk?' <span class="arr">'+(sd<0?'▼':'▲')+'</span>':'')+'</th>').join('')+'</tr></thead><tbody>';
-  data.forEach(d=>{h+='<tr><td class="label" title="'+d.label+'">'+d.label+'</td>'+metricCols.map(c=>{const def=COLDEF3[c];return'<td>'+(def?def[1](d[c]):d[c])+'</td>';}).join('')+'</tr>';});
+  data.forEach(d=>{h+='<tr><td class="label" title="'+esc(d.label)+'">'+esc(d.label)+'</td>'+metricCols.map(c=>{const def=COLDEF3[c];return'<td>'+(def?def[1](d[c]):d[c])+'</td>';}).join('')+'</tr>';});
   h+='</tbody></table>';
   if(!data.length)h='<div class="empty-note">데이터 없음</div>';
   box.innerHTML=h;
